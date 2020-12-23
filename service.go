@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/spiral/php-grpc/parser"
 	"github.com/spiral/roadrunner"
 	"github.com/spiral/roadrunner/service/env"
@@ -269,7 +271,10 @@ func (svc *Service) serverOptions() (opts []grpc.ServerOption, err error) {
 	// custom codec is required to bypass protobuf, common interceptor used for debug and stats
 	return append(
 		opts,
-		grpc.UnaryInterceptor(svc.interceptor),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			svc.interceptor,
+			grpc_opentracing.UnaryServerInterceptor(),
+		)),
 		grpc.CustomCodec(&codec{encoding.GetCodec("proto")}),
 	), nil
 }
